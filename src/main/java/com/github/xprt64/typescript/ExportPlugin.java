@@ -181,11 +181,9 @@ public class ExportPlugin extends AbstractMojo {
         finder.addClassPath();
         try {
             project.getCompileClasspathElements().forEach(s -> {
-                getLog().info("adding file to class loader " + s);
                 finder.add(new File(s));
             });
             project.getRuntimeClasspathElements().forEach(s -> {
-                getLog().info("adding file to class loader " + s);
                 finder.add(new File(s));
             });
         } catch (DependencyResolutionRequiredException e) {
@@ -205,7 +203,7 @@ public class ExportPlugin extends AbstractMojo {
         try {
             Files.copy(in, Paths.get(getOutputDir(), filename));
         } catch (FileAlreadyExistsException e) {
-            System.out.println("file not overwrited: " + filename);
+            getLog().info("file not overwritten, already exists: " + filename);
         } catch (IOException e) {
             e.printStackTrace();
         }

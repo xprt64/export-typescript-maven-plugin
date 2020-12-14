@@ -18,20 +18,9 @@ public class ObjectConverter {
             }
             referencedClasses.add(referencedClazz);
         };
-        System.out.println("\n\n\n");
-        System.out.println("converting " + clazz.getCanonicalName());
         Type genericSuperclassc = clazz.getGenericSuperclass();
         if (null != genericSuperclassc && !genericSuperclassc.getTypeName().equals("java.lang.Object")) {
             reporter.accept(clazz.getSuperclass());
-//            if (genericSuperclassc instanceof ParameterizedType) {
-//                System.out.println("found generic super class type name " + ((ParameterizedType) genericSuperclassc).getTypeName());
-//                Type[] genericTypes = ((ParameterizedType) genericSuperclassc).getActualTypeArguments();
-//                for (Type genericType : genericTypes) {
-//                    System.out.println("    Generic type class: " + genericType.getClass().getCanonicalName());
-//                    System.out.println("    Generic type: " + genericType.getTypeName());
-//                }
-//            }
-
         }
         Arrays.stream(clazz.getInterfaces()).forEach(inter -> {
             reporter.accept(inter);
