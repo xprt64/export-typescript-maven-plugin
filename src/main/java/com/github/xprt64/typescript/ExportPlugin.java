@@ -25,10 +25,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Mojo(
-    name = "dependency-counter",
-    defaultPhase = LifecyclePhase.COMPILE,
-    requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
-    requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME
+        name = "dependency-counter",
+        defaultPhase = LifecyclePhase.COMPILE,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
+        requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME
 )
 public class ExportPlugin extends AbstractMojo {
 
@@ -107,11 +107,15 @@ public class ExportPlugin extends AbstractMojo {
             getLog().info("- exporting command " + classInfo.getClassName());
             Class clazz = classLoader.loadClass(classInfo.getClassName());
             TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter);
-            String code = TypescriptCommand.export(generatedInterface);
-            getLog().info(code);
+            TypescriptCommand.export(generatedInterface, getOutputDir());
+
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    String getOutputDir() {
+        return project.getBasedir() + "/" + apiDir;
     }
 
     void exportQuestion(ClassInfo classInfo) {
@@ -130,7 +134,6 @@ public class ExportPlugin extends AbstractMojo {
         getLog().info("- " + clazz.getCanonicalName());
         getLog().info(converter.generateInterface(clazz, null).generateInterface());
     }
-
 
 
     Collection<ClassInfo> findClassesThatImplement(String interfaceName) {
@@ -164,7 +167,7 @@ public class ExportPlugin extends AbstractMojo {
             }
         }
         return new URLClassLoader(runtimeUrls,
-            Thread.currentThread().getContextClassLoader());
+                Thread.currentThread().getContextClassLoader());
     }
 
     ClassFinder makeClassFinder() {

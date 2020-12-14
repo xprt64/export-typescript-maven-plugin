@@ -1,5 +1,6 @@
 package com.github.xprt64.typescript;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
@@ -19,10 +20,13 @@ public class TypescriptInterface {
         this.body = body;
     }
 
+    private List<String> getEnumValues(Class<?> clazz) {
+        return Arrays.stream(clazz.getEnumConstants()).map(s -> "\"" + s.toString() + "\"").collect(Collectors.toList());
+    }
+
     public String generateInterface() {
-        if(clazz.isEnum()){
-            List<?> constants = Arrays.stream(clazz.getEnumConstants()).collect(Collectors.toList());
-            return "export enum " + clazz.getSimpleName() + " {" + String.join(constants)
+        if (clazz.isEnum()) {
+            return "export type " + clazz.getSimpleName() + " = " + String.join("|", getEnumValues(clazz)) + ";";
         }
         String name = clazz.getSimpleName();
         List<String> implementations = new ArrayList<>();
@@ -34,8 +38,18 @@ public class TypescriptInterface {
             implementations.addAll(Arrays.stream(clazz.getInterfaces()).map(inter -> inter.getSimpleName()).collect(Collectors.toList()));
         }
         return "export interface " + name + "" + (implementations.size() > 0 ? " extends " + String.join(", ", implementations) : "") + " {\n" +
-            "" + body +
-            "}";
+                "" + body +
+                "}";
+    }
+
+    public String getRelativeDirPath() {
+        LinkedList<String> strings = clazzComponents(clazz);
+        strings.removeLast();
+        return String.join("/", strings);
+    }
+
+    public String getFileName() {
+        return clazzComponents(clazz).getLast();
     }
 
     public Class<?> getClazz() {
@@ -48,22 +62,22 @@ public class TypescriptInterface {
 
     public List<String> generateImports() {
         List<String> result = imports
-            .stream()
-            .map(importedClass -> {
-                String path = String.join("/", relative(clazzComponents(clazz), clazzComponents(importedClass)));
-                return "import " + importedClass.getSimpleName() + " from '" + path + "';";
-            })
-            .collect(Collectors.toList());
+                .stream()
+                .map(importedClass -> {
+                    String path = String.join("/", relative(clazzComponents(clazz), clazzComponents(importedClass)));
+                    return "import " + importedClass.getSimpleName() + " from '" + path + "';";
+                })
+                .collect(Collectors.toList());
 
         result.addAll(
-            otherImports
-                .stream()
-                .map(other -> {
-                    String path = String.join("/", relative(clazzComponents(clazz), pathComponents(other[1])));
-                    return "import {" + other[0] + "} from '" + path + "';";
+                otherImports
+                        .stream()
+                        .map(other -> {
+                            String path = String.join("/", relative(clazzComponents(clazz), pathComponents(other[1])));
+                            return "import {" + other[0] + "} from '" + path + "';";
 
-                })
-                .collect(Collectors.toList())
+                        })
+                        .collect(Collectors.toList())
         );
 
         return result;
