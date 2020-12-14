@@ -30,6 +30,20 @@
       <threadSafe>false</threadSafe>
       <parameters>
         <parameter>
+          <name>apiDir</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>commands</name>
+          <type>java.lang.String[]</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
           <name>project</name>
           <type>org.apache.maven.project.MavenProject</type>
           <required>true</required>
@@ -37,7 +51,7 @@
           <description></description>
         </parameter>
         <parameter>
-          <name>subClassesOf</name>
+          <name>questions</name>
           <type>java.lang.String[]</type>
           <required>false</required>
           <editable>true</editable>
@@ -45,8 +59,10 @@
         </parameter>
       </parameters>
       <configuration>
+        <apiDir implementation="java.lang.String">${apiDir}</apiDir>
+        <commands implementation="java.lang.String[]">${commands}</commands>
         <project implementation="org.apache.maven.project.MavenProject" default-value="${project}"/>
-        <subClassesOf implementation="java.lang.String[]">${subClassesOf}</subClassesOf>
+        <questions implementation="java.lang.String[]">${questions}</questions>
       </configuration>
     </mojo>
   </mojos>

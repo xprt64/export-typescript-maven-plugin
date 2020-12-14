@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="cqrs-java-export-typescript-dtos" />
+        <module name="export-typescript-maven-plugin" />
       </profile>
     </annotationProcessing>
   </component>

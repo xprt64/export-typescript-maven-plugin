@@ -28,7 +28,21 @@
       <threadSafe>false</threadSafe>
       <parameters>
         <parameter>
-          <name>subClassesOf</name>
+          <name>apiDir</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>commands</name>
+          <type>java.lang.String[]</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>questions</name>
           <type>java.lang.String[]</type>
           <required>false</required>
           <editable>true</editable>
@@ -36,7 +50,9 @@
         </parameter>
       </parameters>
       <configuration>
-        <subClassesOf implementation="java.lang.String[]">${subClassesOf}</subClassesOf>
+        <apiDir implementation="java.lang.String">${apiDir}</apiDir>
+        <commands implementation="java.lang.String[]">${commands}</commands>
+        <questions implementation="java.lang.String[]">${questions}</questions>
       </configuration>
     </mojo>
   </mojos>
