@@ -13,10 +13,15 @@ import org.clapper.util.classutil.ClassFinder;
 import org.clapper.util.classutil.ClassInfo;
 import org.clapper.util.classutil.SubclassClassFilter;
 
-import java.io.File;
+import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.CopyOption;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -87,6 +92,8 @@ public class ExportPlugin extends AbstractMojo {
         referencedObjects.forEach(clazz -> {
             exportReferencedObject(clazz);
         });
+
+        writeApiDelegate();
     }
 
     void exportClass(ClassInfo classInfo) {
@@ -123,8 +130,7 @@ public class ExportPlugin extends AbstractMojo {
             getLog().info("- exporting question " + classInfo.getClassName());
             Class clazz = classLoader.loadClass(classInfo.getClassName());
             TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter);
-            String code = TypescriptQuestion.export(generatedInterface);
-            getLog().info(code);
+            TypescriptQuestion.export(generatedInterface, getOutputDir());
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -132,7 +138,7 @@ public class ExportPlugin extends AbstractMojo {
 
     void exportReferencedObject(Class<?> clazz) {
         getLog().info("- " + clazz.getCanonicalName());
-        getLog().info(converter.generateInterface(clazz, null).generateInterface());
+        TypescriptReference.export(converter.generateInterface(clazz, null), getOutputDir());
     }
 
 
@@ -190,5 +196,18 @@ public class ExportPlugin extends AbstractMojo {
 
     Consumer<Class<?>> makeNewObjectReporter() {
         return (Class<?> clazz) -> referencedObjects.add(clazz);
+    }
+
+    void writeApiDelegate() {
+        String filename = "api_delegate.ts";
+        InputStream in = getClass().getResourceAsStream("/" + filename);
+
+        try {
+            Files.copy(in, Paths.get(getOutputDir(), filename));
+        } catch (FileAlreadyExistsException e) {
+            System.out.println("file not overwrited: " + filename);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

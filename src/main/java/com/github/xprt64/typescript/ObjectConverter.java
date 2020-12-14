@@ -43,7 +43,7 @@ public class ObjectConverter {
     private void addMembers(Class<?> clazz, List<String> output, Consumer<Class<?>> reporter) {
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
-            System.out.println("found item " + field.getName() + ":" + field.getType().getCanonicalName() + ":" + field.getGenericType().getTypeName());
+            //System.out.println("found item " + field.getName() + ":" + field.getType().getCanonicalName() + ":" + field.getGenericType().getTypeName());
             String converted = null;
             if (isArray(field)) {
                 converted = convertArray(field, reporter);
@@ -170,7 +170,7 @@ public class ObjectConverter {
 
     private String convertAsObject(Field field, Consumer<Class<?>> newObjectReporter) {
         newObjectReporter.accept(field.getType());
-        return field.getName() + (isOptional(field) ? "?" : "") + ":" + field.getType().getCanonicalName();
+        return field.getName() + (isOptional(field) ? "?" : "") + ":" + field.getType().getSimpleName();
     }
 
 }

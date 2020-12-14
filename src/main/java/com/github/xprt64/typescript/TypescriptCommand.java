@@ -1,14 +1,9 @@
 package com.github.xprt64.typescript;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-
 public class TypescriptCommand {
     public static void export(TypescriptInterface generatedInterface, String apiDir) {
         String code = generateCode(generatedInterface);
-        writeToFile(generatedInterface, code, apiDir);
+        FileWriter.writeToFile(generatedInterface, code, apiDir, ".ts");
     }
 
     public static String generateCode(TypescriptInterface generatedInterface) {

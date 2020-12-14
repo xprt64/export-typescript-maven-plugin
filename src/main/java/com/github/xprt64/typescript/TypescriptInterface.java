@@ -65,7 +65,7 @@ public class TypescriptInterface {
                 .stream()
                 .map(importedClass -> {
                     String path = String.join("/", relative(clazzComponents(clazz), clazzComponents(importedClass)));
-                    return "import " + importedClass.getSimpleName() + " from '" + path + "';";
+                    return "import {" + importedClass.getSimpleName() + "} from '" + path + "';";
                 })
                 .collect(Collectors.toList());
 
@@ -102,7 +102,7 @@ public class TypescriptInterface {
                 break;
             }
         }
-        for (int i = 0; i < base.size(); i++) {
+        for (int i = 0; i < base.size()-1; i++) {
             reference.addFirst("..");
         }
         return reference;

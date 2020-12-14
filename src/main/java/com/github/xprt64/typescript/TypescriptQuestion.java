@@ -1,7 +1,12 @@
 package com.github.xprt64.typescript;
 
 public class TypescriptQuestion {
-    public static String export(TypescriptInterface generatedInterface) {
+    public static void export(TypescriptInterface generatedInterface, String apiDir) {
+        String code = generateCode(generatedInterface);
+        FileWriter.writeToFile(generatedInterface, code, apiDir, ".ts");
+    }
+
+    public static String generateCode(TypescriptInterface generatedInterface) {
         generatedInterface.addImport("answerQuestion", "api_delegate");
         StringBuilder builder = new StringBuilder();
 
@@ -14,11 +19,11 @@ public class TypescriptQuestion {
         builder.append(generatedInterface.generateInterface());
         builder.append("\n");
         builder.append("\n" +
-            "export async function question" + simpleName + "(question: " + simpleName + "): " + simpleName + " {\n" +
-            "    return await question(question)\n" +
+            "export async function askQuestion" + simpleName + "(question: " + simpleName + "): Promise<" + simpleName + "> {\n" +
+            "    return await askQuestion(question)\n" +
             "}\n" +
             "\n" +
-            "export async function question(question: " + simpleName + "): " + simpleName + " {\n" +
+            "export async function askQuestion(question: " + simpleName + "): Promise<" + simpleName + "> {\n" +
             "    return await answerQuestion(\"" + canonicalName + "\", question)\n" +
             "}\n");
 
