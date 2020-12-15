@@ -30,10 +30,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Mojo(
-        name = "generate-api",
-        defaultPhase = LifecyclePhase.COMPILE,
-        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
-        requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME
+    name = "generate-api",
+    defaultPhase = LifecyclePhase.COMPILE,
+    requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
+    requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME
 )
 public class ExportPlugin extends AbstractMojo {
 
@@ -49,7 +49,7 @@ public class ExportPlugin extends AbstractMojo {
     @Parameter(property = "apiDir")
     String apiDir;
 
-    ClassLoader classLoader;
+    public ClassLoader classLoader;
     ClassFinder finder;
 
     Consumer<Class<?>> newObjectReporter;
@@ -57,55 +57,67 @@ public class ExportPlugin extends AbstractMojo {
     ObjectConverter converter;
     private List<Class<?>> referencedObjects = new ArrayList<>();
 
-    @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
+    public FileExporter fileExporter;
 
-        classLoader = makeClassLoader();
-        finder = makeClassFinder();
-        newObjectReporter = makeNewObjectReporter();
-        converter = new ObjectConverter();
+    public ExportPlugin() {
 
-        Collection<ClassInfo> foundClasses = new ArrayList<>();
-        getLog().info("searcing for " + commands.length + " commands");
-        for (String command : commands) {
-            getLog().info("searching for " + command);
-            foundClasses.addAll(findClassesThatImplement(command));
-        }
-        getLog().info("found " + foundClasses.size() + " commands");
-        for (ClassInfo classInfo : foundClasses) {
-            exportCommand(classInfo);
-        }
-
-        Collection<ClassInfo> foundQuestions = new ArrayList<>();
-        getLog().info("searcing for " + questions.length + " questions");
-        for (String question : questions) {
-            getLog().info("searching for " + question);
-            foundQuestions.addAll(findClassesThatImplement(question));
-        }
-        getLog().info("found " + foundQuestions.size() + " questions");
-        for (ClassInfo classInfo : foundQuestions) {
-            exportQuestion(classInfo);
-        }
-
-        getLog().info("found " + referencedObjects.size() + " referenced objects");
-
-        referencedObjects.forEach(clazz -> {
-            exportReferencedObject(clazz);
-        });
-
-        writeApiDelegate();
     }
 
-    void exportCommand(ClassInfo classInfo) {
-        try {
-            getLog().info("- exporting command " + classInfo.getClassName());
-            Class clazz = classLoader.loadClass(classInfo.getClassName());
-            TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter, classLoader);
-            TypescriptCommand.export(generatedInterface, getOutputDir());
+    public void init() throws MojoExecutionException {
+        if (null == fileExporter) {
+            fileExporter = new FileExporter(this.apiDir);
+        }
+        if (null == classLoader) {
+            classLoader = makeClassLoader();
+        }
+        newObjectReporter = makeNewObjectReporter();
+        converter = new ObjectConverter();
+    }
 
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
+        try {
+            init();
+            finder = makeClassFinder();
+
+            Collection<ClassInfo> foundClasses = new ArrayList<>();
+            getLog().info("searcing for " + commands.length + " commands");
+            for (String command : commands) {
+                getLog().info("searching for " + command);
+                foundClasses.addAll(findClassesThatImplement(command));
+            }
+            getLog().info("found " + foundClasses.size() + " commands");
+            for (ClassInfo classInfo : foundClasses) {
+                exportCommand(classLoader.loadClass(classInfo.getClassName()));
+            }
+
+            Collection<ClassInfo> foundQuestions = new ArrayList<>();
+            getLog().info("searcing for " + questions.length + " questions");
+            for (String question : questions) {
+                getLog().info("searching for " + question);
+                foundQuestions.addAll(findClassesThatImplement(question));
+            }
+            getLog().info("found " + foundQuestions.size() + " questions");
+            for (ClassInfo classInfo : foundQuestions) {
+                exportQuestion(classInfo);
+            }
+
+            getLog().info("found " + referencedObjects.size() + " referenced objects");
+
+            referencedObjects.forEach(clazz -> {
+                exportReferencedObject(clazz);
+            });
+
+            writeApiDelegate();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    public void exportCommand(Class<?> clazz) {
+        getLog().info("- exporting command " + clazz.getCanonicalName());
+        TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter, classLoader);
+        TypescriptCommand.export(generatedInterface, fileExporter);
     }
 
     String getOutputDir() {
@@ -117,7 +129,7 @@ public class ExportPlugin extends AbstractMojo {
             getLog().info("- exporting question " + classInfo.getClassName());
             Class clazz = classLoader.loadClass(classInfo.getClassName());
             TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter, classLoader);
-            TypescriptQuestion.export(generatedInterface, getOutputDir());
+            TypescriptQuestion.export(generatedInterface, fileExporter);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -125,7 +137,7 @@ public class ExportPlugin extends AbstractMojo {
 
     void exportReferencedObject(Class<?> clazz) {
         getLog().info("- " + clazz.getCanonicalName());
-        TypescriptReference.export(converter.generateInterface(clazz, null, classLoader), getOutputDir());
+        TypescriptReference.export(converter.generateInterface(clazz, null, classLoader), fileExporter);
     }
 
 
@@ -160,7 +172,7 @@ public class ExportPlugin extends AbstractMojo {
             }
         }
         return new URLClassLoader(runtimeUrls,
-                Thread.currentThread().getContextClassLoader());
+                                  Thread.currentThread().getContextClassLoader());
     }
 
     ClassFinder makeClassFinder() {

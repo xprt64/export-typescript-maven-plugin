@@ -1,9 +1,9 @@
 package com.github.xprt64.typescript;
 
 public class TypescriptQuestion {
-    public static void export(TypescriptInterface generatedInterface, String apiDir) {
+    public static void export(TypescriptInterface generatedInterface, FileExporter fileExporter) {
         String code = generateCode(generatedInterface);
-        FileWriter.writeToFile(generatedInterface, code, apiDir, ".ts");
+        fileExporter.writeFile(generatedInterface.getRelativeDirPath() + "/" + generatedInterface.getFileName() + ".ts", code);
     }
 
     public static String generateCode(TypescriptInterface generatedInterface) {

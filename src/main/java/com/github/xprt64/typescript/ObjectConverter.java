@@ -91,13 +91,13 @@ public class ObjectConverter {
     }
 
     private String convertGenericField(Field field, Consumer<Class<?>> reporter) {
-        return field.getName() + (isOptional(field) ? "?" : "") + ":" + field.getGenericType().getTypeName() + (field.getType().isEnum() ? "[]" : "");
+        return field.getName() + (isOptional(field) ? "?" : "") + ": " + field.getGenericType().getTypeName() + (field.getType().isEnum() ? "[]" : "");
     }
 
     private String tryConvertPrimitive(Field field) {
         if (isBasic(field)) {
             String basicType = getPrimitiveType(field);
-            return field.getName() + (isOptional(field) ? "?" : "") + ":" + basicType;
+            return field.getName() + (isOptional(field) ? "?" : "") + ": " + basicType;
         } else {
             return null;
         }
@@ -112,7 +112,7 @@ public class ObjectConverter {
                 typescriptType = resolveToTypescript(c, newObjectReporter);
             }
         }
-        return field.getName() + (isOptional(field) ? "?" : "") + ":" + typescriptType + "[]";
+        return field.getName() + (isOptional(field) ? "?" : "") + ": " + typescriptType + "[]";
     }
 
     private String resolveToTypescript(Class c, Consumer<Class<?>> newObjectReporter) {
@@ -142,7 +142,7 @@ public class ObjectConverter {
         } else {
             typescriptType = resolveToTypescript(c, newObjectReporter);
         }
-        return field.getName() + (isOptional(field) ? "?" : "") + ":" + typescriptType + "[]";
+        return field.getName() + (isOptional(field) ? "?" : "") + ": " + typescriptType + "[]";
     }
 
     private boolean isList(Field field) {
@@ -219,7 +219,7 @@ public class ObjectConverter {
         } else {
             newObjectReporter.accept(field.getType());
         }
-        return name + (isOptional(field) ? "?" : "") + ":" + field.getType().getSimpleName();
+        return name + (isOptional(field) ? "?" : "") + ": " + field.getType().getSimpleName();
     }
 
     public static boolean shouldIncludeInterfaceOrClass(Class<?> c){
