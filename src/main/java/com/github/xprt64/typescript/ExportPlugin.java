@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Mojo(
-        name = "dependency-counter",
+        name = "generate-api",
         defaultPhase = LifecyclePhase.COMPILE,
         requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
         requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME
@@ -96,24 +96,11 @@ public class ExportPlugin extends AbstractMojo {
         writeApiDelegate();
     }
 
-    void exportClass(ClassInfo classInfo) {
-        try {
-            getLog().info("- " + classInfo.getClassName());
-            Class clazz = classLoader.loadClass(classInfo.getClassName());
-            getLog().info(converter.generateInterface(clazz, newObjectReporter).generateInterface());
-            if (referencedObjects.size() > 0) {
-                getLog().info("    referenced objects: " + String.join(", ", referencedObjects.stream().map(Class::toString).collect(Collectors.toList())));
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
     void exportCommand(ClassInfo classInfo) {
         try {
             getLog().info("- exporting command " + classInfo.getClassName());
             Class clazz = classLoader.loadClass(classInfo.getClassName());
-            TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter);
+            TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter, classLoader);
             TypescriptCommand.export(generatedInterface, getOutputDir());
 
         } catch (ClassNotFoundException e) {
@@ -129,7 +116,7 @@ public class ExportPlugin extends AbstractMojo {
         try {
             getLog().info("- exporting question " + classInfo.getClassName());
             Class clazz = classLoader.loadClass(classInfo.getClassName());
-            TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter);
+            TypescriptInterface generatedInterface = converter.generateInterface(clazz, newObjectReporter, classLoader);
             TypescriptQuestion.export(generatedInterface, getOutputDir());
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -138,7 +125,7 @@ public class ExportPlugin extends AbstractMojo {
 
     void exportReferencedObject(Class<?> clazz) {
         getLog().info("- " + clazz.getCanonicalName());
-        TypescriptReference.export(converter.generateInterface(clazz, null), getOutputDir());
+        TypescriptReference.export(converter.generateInterface(clazz, null, classLoader), getOutputDir());
     }
 
 

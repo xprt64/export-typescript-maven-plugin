@@ -6,10 +6,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class ObjectConverter {
 
-    public TypescriptInterface generateInterface(Class<?> clazz, Consumer<Class<?>> newObjectReporter) {
+    public TypescriptInterface generateInterface(Class<?> clazz, Consumer<Class<?>> newObjectReporter, ClassLoader classLoader) {
         List<String> res = new ArrayList<>();
         List<Class<?>> referencedClasses = new ArrayList<>();
         Consumer<Class<?>> reporter = (referencedClazz) -> {
@@ -18,23 +19,63 @@ public class ObjectConverter {
             }
             referencedClasses.add(referencedClazz);
         };
-        Type genericSuperclassc = clazz.getGenericSuperclass();
-        if (null != genericSuperclassc && !genericSuperclassc.getTypeName().equals("java.lang.Object")) {
-            reporter.accept(clazz.getSuperclass());
+        if (!clazz.isEnum()) {
+            Type genericSuperclass = clazz.getGenericSuperclass();
+            if (null != genericSuperclass && !genericSuperclass.getTypeName().equals("java.lang.Object")) {
+                reporter.accept(clazz.getSuperclass());
+                if (genericSuperclass instanceof ParameterizedType) {
+                    ParameterizedType pt = (ParameterizedType) genericSuperclass;
+                    Arrays.stream(pt.getActualTypeArguments()).forEach(t -> {
+                        try {
+                            Class<?> typeClass = classLoader.loadClass(t.getTypeName());
+                            if (!isBasic(typeClass) && !typeClass.getCanonicalName().equals(clazz.getCanonicalName())) {
+                                reporter.accept(typeClass);
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                            throw new RuntimeException(e);
+                        }
+                    });
+                }
+            }
+            Arrays.stream(clazz.getInterfaces()).forEach(inter -> {
+                if (!shouldIncludeInterfaceOrClass(inter)) {
+                    return;
+                }
+                reporter.accept(inter);
+            });
+            addMembers(clazz, res, reporter);
         }
-        Arrays.stream(clazz.getInterfaces()).forEach(inter -> {
-            reporter.accept(inter);
-        });
-        addMembers(clazz, res, reporter);
-        return new TypescriptInterface(clazz, referencedClasses, String.join("", res));
+
+        return new TypescriptInterface(clazz, referencedClasses, String.join("", res), factoryTypeResolver());
+    }
+
+    private Function<Type, String> factoryTypeResolver() {
+        return (type) -> {
+            if (type instanceof Class) {
+                Class<?> c = (Class<?>) type;
+                if (isBasic(c)) {
+                    return getPrimitiveType(c);
+                }
+                return (c).getSimpleName();
+            } else {
+                return type.getTypeName();
+            }
+        };
     }
 
     private void addMembers(Class<?> clazz, List<String> output, Consumer<Class<?>> reporter) {
+        Function<Field, Boolean> fieldIsTemplateParameter = (Field field) -> {
+            return Arrays.stream(clazz.getTypeParameters()).filter(t -> t.getName().equals(field.getGenericType().getTypeName())).count() > 0;
+        };
+
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
             //System.out.println("found item " + field.getName() + ":" + field.getType().getCanonicalName() + ":" + field.getGenericType().getTypeName());
             String converted = null;
-            if (isArray(field)) {
+            if (fieldIsTemplateParameter.apply(field)) {
+                converted = convertGenericField(field, reporter);
+            } else if (isArray(field)) {
                 converted = convertArray(field, reporter);
             } else if (isList(field)) {
                 converted = convertList(field, reporter);
@@ -47,6 +88,10 @@ public class ObjectConverter {
             }
             output.add("     " + converted + ";\n");
         }
+    }
+
+    private String convertGenericField(Field field, Consumer<Class<?>> reporter) {
+        return field.getName() + (isOptional(field) ? "?" : "") + ":" + field.getGenericType().getTypeName() + (field.getType().isEnum() ? "[]" : "");
     }
 
     private String tryConvertPrimitive(Field field) {
@@ -67,8 +112,6 @@ public class ObjectConverter {
                 typescriptType = resolveToTypescript(c, newObjectReporter);
             }
         }
-
-        newObjectReporter.accept(field.getType());
         return field.getName() + (isOptional(field) ? "?" : "") + ":" + typescriptType + "[]";
     }
 
@@ -111,6 +154,16 @@ public class ObjectConverter {
     }
 
     private boolean isBasic(Field field) {
+        Type t = field.getGenericType();
+        if (field.getName().equals("answer")) {
+            System.out.println("isBasic: " + field.getName());
+            System.out.println("getType: " + field.getType());
+            System.out.println("getTypeName:" + t.getTypeName());
+            System.out.println("t instanceof ParameterizedType:" + (t instanceof ParameterizedType ? true : false));
+        }
+        if (t instanceof ParameterizedType) {
+            return false;
+        }
         return isBasic(field.getType());
     }
 
@@ -118,7 +171,8 @@ public class ObjectConverter {
         if (clazz.isArray()) {
             return isBasic(clazz.getComponentType());
         }
-        return clazz.isPrimitive() || clazz.isAssignableFrom(String.class)
+        return clazz.isPrimitive()
+            || clazz.isAssignableFrom(String.class)
             || clazz.isAssignableFrom(Integer.class)
             || clazz.isAssignableFrom(Date.class)
             || clazz.isAssignableFrom(Float.class)
@@ -137,10 +191,10 @@ public class ObjectConverter {
 
     private String getPrimitiveType(Class clazz) {
         switch (clazz.getSimpleName().toLowerCase().replaceAll("(\\[|\\])*$", "")) {
-            case "int":
-            case "integer":
             case "long":
                 return "bigint";
+            case "int":
+            case "integer":
             case "double":
             case "float":
                 return "number";
@@ -158,8 +212,17 @@ public class ObjectConverter {
     }
 
     private String convertAsObject(Field field, Consumer<Class<?>> newObjectReporter) {
-        newObjectReporter.accept(field.getType());
-        return field.getName() + (isOptional(field) ? "?" : "") + ":" + field.getType().getSimpleName();
+        Type t = field.getGenericType();
+        String name = field.getName();
+        if (t instanceof ParameterizedType) {
+            name = ((ParameterizedType) t).getRawType().getTypeName();
+        } else {
+            newObjectReporter.accept(field.getType());
+        }
+        return name + (isOptional(field) ? "?" : "") + ":" + field.getType().getSimpleName();
     }
 
+    public static boolean shouldIncludeInterfaceOrClass(Class<?> c){
+        return !c.getCanonicalName().startsWith("java.");
+    }
 }

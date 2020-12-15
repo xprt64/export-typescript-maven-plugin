@@ -6,7 +6,7 @@
 
     <groupId>com.github.xprt64</groupId>
     <artifactId>cqrs-java-export-typescript-dtos</artifactId>
-    <version>1.0</version>
+    <version>0.0.1</version>
     <packaging>maven-plugin</packaging>
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>

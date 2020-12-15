@@ -7,13 +7,13 @@
   <description></description>
   <groupId>com.github.xprt64</groupId>
   <artifactId>cqrs-java-export-typescript-dtos</artifactId>
-  <version>1.0</version>
+  <version>0.0.1</version>
   <goalPrefix>cqrs-java-export-typescript-dtos</goalPrefix>
   <isolatedRealm>false</isolatedRealm>
   <inheritedByDefault>true</inheritedByDefault>
   <mojos>
     <mojo>
-      <goal>dependency-counter</goal>
+      <goal>generate-api</goal>
       <requiresDependencyResolution>compile+runtime</requiresDependencyResolution>
       <requiresDirectInvocation>false</requiresDirectInvocation>
       <requiresProject>true</requiresProject>

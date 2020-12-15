@@ -1,45 +1,69 @@
 package com.github.xprt64.typescript;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class TypescriptInterface {
     private Class<?> clazz;
     private List<Class<?>> imports;
     private List<String[]> otherImports = new ArrayList<>();
     private String body;
+    private Function<Type, String> typeResolver;
 
-    public TypescriptInterface(Class<?> clazz, List<Class<?>> referencedClasses, String body) {
+    public TypescriptInterface(Class<?> clazz, List<Class<?>> referencedClasses, String body, Function<Type, String> typeResolver) {
         this.clazz = clazz;
         this.imports = referencedClasses;
         this.body = body;
+        this.typeResolver = typeResolver;
     }
 
     private List<String> getEnumValues(Class<?> clazz) {
-        return Arrays.stream(clazz.getEnumConstants()).map(s -> "\"" + s.toString() + "\"").collect(Collectors.toList());
+        return Arrays.stream(clazz.getEnumConstants()).map(s -> s.toString()).collect(Collectors.toList());
+    }
+
+    private String generateEnum(){
+        return "export enum " + clazz.getSimpleName() + " { " + "\n" + String.join("\n", getEnumValues(clazz) .stream().map( e -> e + " = \"" + e + "\", " ).collect(Collectors.toList())) + " }";
+
     }
 
     public String generateInterface() {
         if (clazz.isEnum()) {
-            return "export type " + clazz.getSimpleName() + " = " + String.join("|", getEnumValues(clazz)) + ";";
+            return generateEnum();
         }
         String name = clazz.getSimpleName();
         List<String> implementations = new ArrayList<>();
         Type genericSuperclass = clazz.getGenericSuperclass();
         if (null != genericSuperclass && !genericSuperclass.getTypeName().equals("java.lang.Object")) {
-            implementations.add(clazz.getGenericSuperclass().getTypeName());
+            String superClassSignature = clazz.getGenericSuperclass().getTypeName();
+            if (genericSuperclass instanceof ParameterizedType) {
+                ParameterizedType pt = (ParameterizedType) genericSuperclass;
+
+                Arrays.stream(pt.getActualTypeArguments()).forEach(t -> {
+                    System.out.println(" - " + t.getTypeName());
+                });
+                if (pt.getRawType() instanceof Class) {
+                    Class<?> c1 = (Class<?>) pt.getRawType();
+                    superClassSignature = c1.getSimpleName() + "<" + String.join(", ", Arrays.stream(pt.getActualTypeArguments()).map(t -> typeResolver.apply(t)).collect(Collectors.toList())) + ">";
+                }
+            }
+            implementations.add(superClassSignature);
         }
         if (clazz.getInterfaces().length > 0) {
-            implementations.addAll(Arrays.stream(clazz.getInterfaces()).map(inter -> inter.getSimpleName()).collect(Collectors.toList()));
+            implementations.addAll(Arrays.stream(clazz.getInterfaces())
+                .filter(ObjectConverter::shouldIncludeInterfaceOrClass)
+                .map(inter -> inter.getSimpleName()).collect(Collectors.toList()));
+        }
+
+        if (clazz.getTypeParameters().length > 0) {
+                name = name + "<" + String.join(", ", Arrays.stream(clazz.getTypeParameters()).map(t -> typeResolver.apply(t)).collect(Collectors.toList())) + ">";
         }
         return "export interface " + name + "" + (implementations.size() > 0 ? " extends " + String.join(", ", implementations) : "") + " {\n" +
-                "" + body +
-                "}";
+            "" + body +
+            "}";
     }
 
     public String getRelativeDirPath() {
@@ -62,25 +86,25 @@ public class TypescriptInterface {
 
     public List<String> generateImports() {
         List<String> result = imports
-                .stream()
-                .map(importedClass -> {
-                    String path = String.join("/", relative(clazzComponents(clazz), clazzComponents(importedClass)));
-                    return "import {" + importedClass.getSimpleName() + "} from '" + path + "';";
-                })
-                .collect(Collectors.toList());
+            .stream()
+            .map(importedClass -> {
+                String path = String.join("/", relative(clazzComponents(clazz), clazzComponents(importedClass)));
+                return "import {" + importedClass.getSimpleName() + "} from '" + path + "';";
+            })
+            .collect(Collectors.toList());
 
         result.addAll(
-                otherImports
-                        .stream()
-                        .map(other -> {
-                            String path = String.join("/", relative(clazzComponents(clazz), pathComponents(other[1])));
-                            return "import {" + other[0] + "} from '" + path + "';";
+            otherImports
+                .stream()
+                .map(other -> {
+                    String path = String.join("/", relative(clazzComponents(clazz), pathComponents(other[1])));
+                    return "import {" + other[0] + "} from '" + path + "';";
 
-                        })
-                        .collect(Collectors.toList())
+                })
+                .collect(Collectors.toList())
         );
 
-        return result;
+        return result.stream().distinct().collect(Collectors.toList());
     }
 
     private LinkedList<String> clazzComponents(Class clazz) {
@@ -102,8 +126,11 @@ public class TypescriptInterface {
                 break;
             }
         }
-        for (int i = 0; i < base.size()-1; i++) {
+        for (int i = 0; i < base.size() - 1; i++) {
             reference.addFirst("..");
+        }
+        if (!reference.getFirst().equals("..")) {
+            reference.addFirst(".");
         }
         return reference;
     }
@@ -114,6 +141,11 @@ public class TypescriptInterface {
 
     public String getSimpleName() {
         return clazz.getSimpleName();
+    }
+
+    public String getSimpleNameFromString(String str) {
+        String[] split = str.split(Pattern.quote("."));
+        return split[split.length - 1];
     }
 
     public String getCanonicalName() {
