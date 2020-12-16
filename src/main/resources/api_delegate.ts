@@ -1,5 +1,5 @@
 import {Command} from "./com/cqrs/base/Command";
-import {Question} from "./org/andrei/base/Question";
+import {Question} from "./com/cqrs/base/Question";
 
 export async function dispatchCommand(commandType: string, command: Command) {
 

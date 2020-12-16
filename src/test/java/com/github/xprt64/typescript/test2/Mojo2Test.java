@@ -1,10 +1,10 @@
-package com.github.xprt64.typescript.test1;
+package com.github.xprt64.typescript.test2;
 
 import com.github.xprt64.typescript.ExportPlugin;
 import com.github.xprt64.typescript.helpers.FileSystemTester;
 import junit.framework.TestCase;
 
-public class Mojo1Test extends TestCase {
+public class Mojo2Test extends TestCase {
     private FileSystemTester fileExporter;
 
     /**
@@ -30,10 +30,10 @@ public class Mojo1Test extends TestCase {
         sut.classLoader = getClass().getClassLoader();
         sut.init();
 
-        sut.exportCommand(Command1.class);
+        sut.exportReferencedObject(SimpleEnum.class);
 
         fileExporter.assertWrittenFilesCount(1);
-        fileExporter.assertFileIsWritten("/test1/Command1.ts", "com/github/xprt64/typescript/test1/Command1.ts");
+        fileExporter.assertFileIsWritten("/test2/SimpleEnum.ts", "com/github/xprt64/typescript/test2/SimpleEnum.ts");
 
     }
 }

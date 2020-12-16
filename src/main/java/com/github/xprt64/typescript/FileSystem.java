@@ -7,11 +7,11 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.regex.Pattern;
 
-public class FileExporter {
+public class FileSystem {
 
     private final String basePath;
 
-    public FileExporter(String basePath) {
+    public FileSystem(String basePath) {
         this.basePath = basePath;
     }
 
@@ -26,8 +26,27 @@ public class FileExporter {
         return new LinkedList<>(Arrays.asList(path.split(Pattern.quote("/"))));
     }
 
+    public static LinkedList<String> relative(LinkedList<String> base, LinkedList<String> reference) {
+        while (base.size() > 0 && reference.size() > 0) {
+            String b = base.get(0);
+            String r = reference.get(0);
+            if (b.equals(r)) {
+                base.removeFirst();
+                reference.removeFirst();
+            } else {
+                break;
+            }
+        }
+        for (int i = 0; i < base.size() - 1; i++) {
+            reference.addFirst("..");
+        }
+        if (reference.size() > 0 && !reference.getFirst().equals("..")) {
+            reference.addFirst(".");
+        }
+        return reference;
+    }
     public void writeFile(String path, String contents) {
-        ParsedPath parsedPath = parsePath(path);
+        ParsedPath parsedPath = parsePath(this.basePath + "/" + path);
         File directory = new File(parsedPath.dirname);
         if (!directory.exists()) {
             if (!directory.mkdirs()) {

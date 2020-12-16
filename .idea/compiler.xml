@@ -8,6 +8,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="cqrs-java-export-typescript-dtos" />
         <module name="export-typescript-maven-plugin" />
+        <module name="cqrs-java-export-typescript-dtos2" />
       </profile>
     </annotationProcessing>
   </component>

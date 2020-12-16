@@ -1,6 +1,6 @@
 package com.github.xprt64.typescript.helpers;
 
-import com.github.xprt64.typescript.FileExporter;
+import com.github.xprt64.typescript.FileSystem;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -9,11 +9,11 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class FileExporterTester extends FileExporter {
+public class FileSystemTester extends FileSystem {
 
     private Map<String, String> files = new HashMap<>();
 
-    public FileExporterTester() {
+    public FileSystemTester() {
         super(null);
     }
 
@@ -32,7 +32,9 @@ public class FileExporterTester extends FileExporter {
     }
 
     private void assertContentsEquals(String expected, String actual){
-        assertEquals(removeNoise(expected), removeNoise(actual));
+//        System.out.println(actual);
+        assertEquals(expected.trim(), actual.trim());
+//        assertEquals(removeNoise(expected), removeNoise(actual));
     }
 
     private boolean fileIsWritten(String path){
@@ -48,7 +50,7 @@ public class FileExporterTester extends FileExporter {
     }
 
     public static String readResource(String path) {
-        java.net.URL url = FileExporterTester.class.getResource(path);
+        java.net.URL url = FileSystemTester.class.getResource(path);
         java.nio.file.Path resPath = null;
         try {
             resPath = java.nio.file.Paths.get(url.toURI());
