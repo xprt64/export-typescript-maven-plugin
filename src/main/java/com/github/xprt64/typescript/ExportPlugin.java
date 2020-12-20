@@ -484,6 +484,7 @@ public class ExportPlugin extends AbstractMojo {
         InputStream in = getClass().getResourceAsStream("/" + filename);
 
         try {
+
             Files.copy(in, Paths.get(getOutputDir(), filename));
         } catch (FileAlreadyExistsException e) {
             getLog().info("file not overwritten, already exists: " + filename);
