@@ -66,7 +66,8 @@ public class ExportPlugin extends AbstractMojo {
 
     public FileSystem fileSystem;
     private int indent = 0;
-    private Set<String> exportedObjects = new HashSet<>();;
+    private Set<String> exportedObjects = new HashSet<>();
+    ;
 
     public ExportPlugin() {
 
@@ -97,13 +98,13 @@ public class ExportPlugin extends AbstractMojo {
 
             getLog().info("found " + emitedObjects.size() + " referenced objects");
 
-            do{
+            do {
                 Collection<Class<?>> values = emitedObjects.values().stream().collect(Collectors.toList());
                 emitedObjects.clear();
                 values.forEach(this::exportReferencedObject);
 
             }
-            while(emitedObjects.size() > 0);
+            while (emitedObjects.size() > 0);
 
             writeApiDelegate();
         } catch (Throwable e) {
@@ -117,6 +118,10 @@ public class ExportPlugin extends AbstractMojo {
     }
 
     public void exportCommand(Class<?> clazz) {
+        if (Modifier.isAbstract(clazz.getModifiers())) {
+            getLog().info("- skipping abstract command " + clazz.getCanonicalName());
+            return;
+        }
         getLog().info("- exporting command " + clazz.getCanonicalName());
         exportReferencedObject(
             clazz,
@@ -139,6 +144,10 @@ public class ExportPlugin extends AbstractMojo {
     }
 
     void exportQuestion(Class<?> clazz) {
+        if (Modifier.isAbstract(clazz.getModifiers())) {
+            getLog().info("- skipping abstract question " + clazz.getCanonicalName());
+            return;
+        }
         getLog().info("- exporting question " + clazz.getCanonicalName());
         exportReferencedObject(
             clazz,
@@ -162,7 +171,7 @@ public class ExportPlugin extends AbstractMojo {
 
     public void exportEnum(Class<?> clazz) {
         String result = "export enum " + clazz.getSimpleName() + " {" + "\n"
-             + String.join("\n", getEnumValues(clazz) .stream().map( e -> INDENT + e + " = \"" + e + "\"," ).collect(Collectors.toList())) + "\n}";
+            + String.join("\n", getEnumValues(clazz).stream().map(e -> INDENT + e + " = \"" + e + "\",").collect(Collectors.toList())) + "\n}";
         fileSystem.writeFile(componentsToPath(clazzComponents(clazz)) + ".ts", result);
     }
 
@@ -171,7 +180,7 @@ public class ExportPlugin extends AbstractMojo {
     }
 
     public void exportReferencedObject(Class<?> clazz, Function<String, String> importsParser, Function<String, String> bodyParser) {
-        if(exportedObjects.contains(clazz.getCanonicalName())){
+        if (exportedObjects.contains(clazz.getCanonicalName())) {
             return;
         }
         exportedObjects.add(clazz.getCanonicalName());
@@ -180,7 +189,7 @@ public class ExportPlugin extends AbstractMojo {
 
         referencedObjects.clear();
 
-        if(clazz.isEnum()){
+        if (clazz.isEnum()) {
             exportEnum(clazz);
             return;
         }
@@ -207,8 +216,7 @@ public class ExportPlugin extends AbstractMojo {
         Type genericSuperClassType = clazz.getGenericSuperclass();
         if (null == genericSuperClassType || genericSuperClassType.equals(Object.class)) {
             // Object class, an interface, a primitive type, or void
-        }
-        else {
+        } else {
             extendList.add(javaTypeToTsType(genericSuperClassType, isParameter));
         }
         Arrays.stream(clazz.getGenericInterfaces()).forEach(type -> {
