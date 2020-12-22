@@ -55,6 +55,9 @@ public class ExportPlugin extends AbstractMojo {
     @Parameter(property = "questions")
     String[] questions;
 
+    @Parameter(property = "pojos")
+    String[] pojos;
+
     @Parameter(property = "apiDir", defaultValue = "api")
     String apiDir;
 
@@ -95,6 +98,12 @@ public class ExportPlugin extends AbstractMojo {
             getLog().info("searching for " + questions.length + " questions");
             Arrays.stream(questions).forEach(
                 className -> findClassesThatImplement(className).forEach(this::exportQuestion));
+
+            getLog().info("searching for " + pojos.length + " other pojos");
+            Arrays.stream(pojos).map(this::loadClass).forEach(c -> {
+                getLog().info("found pojo: " + c.getCanonicalName());
+                emitClass(c);
+            });
 
             getLog().info("found " + emitedObjects.size() + " referenced objects");
 
@@ -414,7 +423,6 @@ public class ExportPlugin extends AbstractMojo {
     private LinkedList<String> pathComponents(String path) {
         return new LinkedList<>(Arrays.asList(path.split(Pattern.quote("/"))));
     }
-
 
     Collection<Class<?>> findClassesThatImplement(String interfaceName) {
         try {
