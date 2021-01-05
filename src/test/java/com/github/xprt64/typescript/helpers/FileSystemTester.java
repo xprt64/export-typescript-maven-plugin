@@ -33,8 +33,12 @@ public class FileSystemTester extends FileSystem {
 
     private void assertContentsEquals(String expected, String actual){
 //        System.out.println(actual);
-        assertEquals(expected.trim(), actual.trim());
+        assertEquals(normalize(expected), normalize(actual));
 //        assertEquals(removeNoise(expected), removeNoise(actual));
+    }
+    
+    private String normalize(String input){
+        return input.trim().replaceAll("\r\n", "\n");
     }
 
     private boolean fileIsWritten(String path){
